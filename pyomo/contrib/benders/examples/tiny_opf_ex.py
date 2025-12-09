@@ -8,7 +8,7 @@
 #  rights in this software.
 #  This software is distributed under the 3-clause BSD License.
 #  ___________________________________________________________________________
-
+import time
 from pyomo.contrib.benders.benders_cuts import BendersCutGenerator
 import pyomo.environ as pyo
 
@@ -128,7 +128,7 @@ def create_subproblem(root):
 
 
 def main():
-
+    t0 = time.time()
     m = create_root()
     root_vars = list(m.generation.values())
     m.benders = BendersCutGenerator()
@@ -140,11 +140,27 @@ def main():
         subproblem_solver='gurobi_persistent',
     )
     opt = pyo.SolverFactory('gurobi_persistent')
+    opt.set_instance(m)
 
+    print(
+        '{0:<15}{1:<15}{2:<15}{3:<15}{4:<15}'.format(
+            '# Cuts', 'Bus 1', 'Bus 2', 'Bus 3', 'Time'
+        )
+    )
     for i in range(30):
         res = opt.solve(m, tee=False)
         cuts_added = m.benders.generate_cut()
-        print(len(cuts_added), m.y.value, m.eta.value)
+        for c in cuts_added:
+            opt.add_constraint(c)
+        print(
+            '{0:<15}{1:<15.2f}{2:<15.2f}{3:<15.2f}{4:<15.2f}'.format(
+                len(cuts_added),
+                pyo.value(m.generation["bus1"]),
+                pyo.value(m.generation["bus2"]),
+                pyo.value(m.generation["bus3"]),
+                time.time() - t0,
+            )
+        )
         if len(cuts_added) == 0:
             break
 
