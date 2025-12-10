@@ -15,6 +15,17 @@ import pyomo.environ as pyo
 import itertools
 from math import pi as pi_value
 
+"""
+EXAMPLE IN DEVELOPMENT
+DC-Optimal Power Flow Example.
+This is a feasibility-only Benders Decomposition example.
+The second-stage contributes only to feasibility cuts.
+
+Specific model and example details adapted from:
+Viens, Skolfied, Hart, and Ferris "An Optimal Solution is Not Enough: Alternative Solutions and Optimal Power Systems"
+https://arxiv.org/abs/2511.08805
+"""
+
 
 class Grid:
     def __init__(self):

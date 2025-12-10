@@ -12,6 +12,10 @@
 from pyomo.contrib.benders.benders_cuts import BendersCutGenerator
 import pyomo.environ as pyo
 
+"""
+Example adapted from Grothey, Leyffer, and McKinnon "A note on feasibility in Benders Decomposition" [GLM99]_
+"""
+
 
 def create_root():
     m = pyo.ConcreteModel()
