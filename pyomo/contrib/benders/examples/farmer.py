@@ -22,6 +22,8 @@ import pyomo.environ as pyo
 To run this example:
 
 mpirun -np 3 python farmer.py
+
+Example adapted from Birge and Louveaux "Introduction to Stochastic Programming"
 """
 
 
