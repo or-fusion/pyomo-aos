@@ -23,6 +23,7 @@ from pyomo.core.expr.visitor import identify_variables
 from pyomo.solvers.plugins.solvers.persistent_solver import PersistentSolver
 
 import pyomo.environ as pyo
+import pprint
 
 MPI = mpi4py.MPI
 logger = logging.getLogger(__name__)
@@ -252,6 +253,8 @@ class BendersCutGeneratorData(BlockData):
         subproblem_solver='gurobi_persistent',
         relax_subproblem_cons=False,
     ):
+        #TODO: add check that etas are lower bounded, optional warn if not
+        # lack of lower bound will induce unboundedness in first solve of master
         _rank = np.argmin(self.num_subproblems_by_rank)
         self.num_subproblems_by_rank[_rank] += 1
         self.all_root_etas.append(root_eta)
@@ -299,6 +302,8 @@ class BendersCutGeneratorData(BlockData):
                 if root_var in complicating_vars_map:
                     sub_var = complicating_vars_map[root_var]
                     sub_var.set_value(root_var.value, skip_validation=True)
+                    #TODO: add tests that hits this case, newsvendor does without initialize statement
+                    assert root_var.value is not None, f"Root Var {root_var.name} has value None, cannot use to set corresponding subproblem var, check main problem boundedness"
                     new_con = subproblem.fix_complicating_vars.add(
                         sub_var - root_var.value == 0
                     )
