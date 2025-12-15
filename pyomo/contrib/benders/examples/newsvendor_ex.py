@@ -12,6 +12,7 @@
 from pyomo.contrib.benders.benders_cuts import BendersCutGenerator
 import pyomo.environ as pyo
 import time
+import pprint
 
 #
 # EXAMPLE IN DEVELOPMENT
@@ -23,32 +24,38 @@ import time
 # https://www.epoc.org.nz/papers/ShapiroTutorialSP.pdf
 #
 
-import pyomo.environ as pyo
-from forestlib.sp import stochastic_program
-
 
 #
 # Data for a simple newsvendor example
 #
 class Newsvendor:
     def __init__(self):
-        c = 1.0
-        b = 1.5
-        h = 0.1
-        scenario_demand = {1: 15, 2: 60, 3: 72, 4: 78, 5: 82}
-        scenarios = scenario_demand.keys()
-        scenario_probabilities = {i: 1 / len(scenarios) for i in scenarios}
+        self.c = 1.0
+        self.b = 1.5
+        self.h = 0.1
+        self.scenario_demand = {1: 15, 2: 60, 3: 72, 4: 78, 5: 82}
+        self.scenarios = self.scenario_demand.keys()
+        self.scenario_probabilities = {i: 1 / len(self.scenarios) for i in self.scenarios}
 
 
 # creates benders master problem model for newsvendor
 def create_root(newsvendor):
     M = pyo.ConcreteModel()
 
-    M.x = pyo.Var(within=pyo.NonNegativeReals)
+    #need to initialize in root since x not in objective or constraints without Benders Cuts
+    #if not initialized, can take value None, which causes issues in the benders_cut code
+    M.x = pyo.Var(bounds=(0.0, None), initialize = 0.0)
     M.scenarios = pyo.Set(initialize=newsvendor.scenarios, ordered=True)
 
     M.eta = pyo.Var(M.scenarios)
+
     M.obj = pyo.Objective(expr=sum(M.eta.values()))
+
+    for s in M.scenarios:
+        #using max demand as 100, so worst case is either buy 100 sell none (cost+holding), or buy 0 demand 100 (shortfall)
+        #lower bound is -max_demand*max{c+h,b}
+        #since scenario weighting is done in subproblems (not done in master objective above), need to weight bounds below
+        M.eta[s].setlb(-1*newsvendor.scenario_probabilities[s] * 100*max(newsvendor.c+newsvendor.h,newsvendor.b))
     return M
 
 
@@ -56,6 +63,7 @@ def create_subproblem(root, newsvendor, scenario):
     M = pyo.ConcreteModel()
 
     M.x = pyo.Var(within=pyo.NonNegativeReals)
+    
 
     b = newsvendor.b
     c = newsvendor.c
@@ -93,14 +101,21 @@ def main():
             root_eta=m.eta[s],
             subproblem_solver='gurobi_persistent',
         )
+    #pprint.pprint(m)
+    #m.pprint()
     opt = pyo.SolverFactory('gurobi_persistent')
     opt.set_instance(m)
 
     print('{0:<15}{1:<15}{2:<15}'.format('# Cuts', 'x', 'Time'))
     for i in range(30):
         res = opt.solve(tee=False, save_results=False)
+        #if i == 0:
+        #    print(f"Solver Status: {str(res.solver.status)}")
+        #    print(f"Termination Condition: {str(res.solver.termination_condition)}")
+        #    m.pprint()
         cuts_added = m.benders.generate_cut()
         for c in cuts_added:
+            #c.pprint()
             opt.add_constraint(c)
         print(
             '{0:<15}{1:<15.2f}{2:<15.2f}'.format(
