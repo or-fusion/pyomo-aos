@@ -14,15 +14,22 @@ import pyomo.environ as pyo
 import time
 import pprint
 
-#
-# EXAMPLE IN DEVELOPMENT
-# Newsvendor example adapted from
-#
-# A Tutorial on Stochastic Programming
-# Alexander Shapiro∗ and Andy Philpott†
-# March 21, 2007
-# https://www.epoc.org.nz/papers/ShapiroTutorialSP.pdf
-#
+"""
+To run this example:
+
+mpirun -np X python newsvendor_ex.py
+Where X is the number of processes, suggest using 2-3
+
+If altering this script, note the more robust error handling available by using:
+mpirun -np X python -m mpi4py newsvendor_ex.py
+Where X is again the number of processes.
+This standardizes error handling especially for unexpected and unhandled errors
+
+A Tutorial on Stochastic Programming
+Alexander Shapiro∗ and Andy Philpott†
+March 21, 2007
+https://www.epoc.org.nz/papers/ShapiroTutorialSP.pdf
+"""
 
 
 #
@@ -40,6 +47,7 @@ class Newsvendor:
 
 # creates benders master problem model for newsvendor
 def create_root(newsvendor):
+    #print(newsvendor)
     M = pyo.ConcreteModel()
 
     #need to initialize in root since x not in objective or constraints without Benders Cuts
@@ -117,6 +125,7 @@ def main():
         for c in cuts_added:
             #c.pprint()
             opt.add_constraint(c)
+        #TODO add time deltas from last cut
         print(
             '{0:<15}{1:<15.2f}{2:<15.2f}'.format(
                 len(cuts_added), pyo.value(m.x), time.time() - t0
