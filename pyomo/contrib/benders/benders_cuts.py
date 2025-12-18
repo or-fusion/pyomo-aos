@@ -92,7 +92,8 @@ subproblem will automatically be transformed to
     s.t. & g(x, y) - z <= 0        & (\alpha) \\
          & f(x, y) - \eta - z <= 0 & (\beta)  \\
          & y - y_k = 0             & (\gamma) \\
-         & \eta - \eta_k = 0       & (\delta)
+         & \eta - \eta_k = 0       & (\delta) \\
+         & z >= 0
    \end{array}\]
 
 """
@@ -303,11 +304,13 @@ class BendersCutGeneratorData(BlockData):
                     sub_var = complicating_vars_map[root_var]
                     sub_var.set_value(root_var.value, skip_validation=True)
                     #TODO: add tests that hits this case, newsvendor does without initialize statement
-                    assert root_var.value is not None, f"Root Var {root_var.name} has value None, cannot use to set corresponding subproblem var, check main problem boundedness"
+                    assert root_var.value is not None, f"Root Var {root_var.name} has value None, cannot use to set corresponding subproblem var, check main problem boundedness or initialization"
                     new_con = subproblem.fix_complicating_vars.add(
                         sub_var - root_var.value == 0
                     )
                     var_to_con_map[root_var] = new_con
+            #TODO: add tests that hits this case, newsvendor does without initialize statement
+            assert root_eta.value is not None, f"Root Eta {root_eta.name} has value None, cannot use to set corresponding subproblem var, check main problem boundedness or initialization"        
             subproblem.fix_eta = pyo.Constraint(
                 expr=subproblem._eta - root_eta.value == 0
             )
